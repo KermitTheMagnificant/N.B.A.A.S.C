@@ -19,14 +19,26 @@ def vorpcalc(boxPm, minPer, teamGames):
     vorp = (boxPm - (-2.0)) * minPer * (teamGames / 82)
     return vorp
 
+# does the Usage % calcs
+def usgcalc(fga, fta, tov, mp, tmFga, tmFta, tmTov, tmMp):
+    if mp == 0:
+        return 0.0
+    player_poss = fga + 0.44 * fta + tov
+    team_poss = tmFga + 0.44 * tmFta + tmTov
+    if team_poss == 0:
+        return 0.0
+    usgper = 100 * (player_poss * (tmMp / 5)) / (mp * team_poss)
+    return usgper
+
 print("------------------------------------------------------------------")
 print("The National Basketball Association Advanced Statistics Calculator")
 print("------------------------------------------------------------------")
-print("Shooting Stats")
+print("Efficiency Stats")
 print("     1) TS%")
 print("     2) eFG%")
-print("Team-Based Stats")
-print("     3) VORP")
+print("     3) USG%")
+print("Season Long Stats")
+print("     4) VORP")
 choice = int(input("Choice: "))
 # True Shooting Percentage Calculator
 if choice == 1:
@@ -37,18 +49,31 @@ if choice == 1:
     print(f"The TS% is: {ts:.1%}")
 
 # Efficiency Field Goal Percentage
-if choice == 2:
+elif choice == 2:
     fgm = int(input("Total field goals made?: "))
     tpm = int(input("Total 3-Pointers made?: "))
     fga = int(input("Field Goal Attempts?: "))
     efg = efgper(fgm, tpm, fga)
     print(f"eFG%: {efg}")
 
+# Usage Rate Percentage
+elif choice == 3:
+    fga = int(input("Field goals attempted?: "))
+    fta = int(input("Free throws attempted?:"))
+    tov = int(input("Turnovers?: "))
+    mp = int(input("Minutes Played?: "))
+    tmFga = int(input("Team Field Goals Attempted?: "))
+    tmFta = int(input("Team Free Throws Attempted?: "))
+    tmMp = int(input("Team Minutes Played?: "))
+    tmTov = int(input("Team Turnovers?: "))
+    usg = usgcalc(fga, fta, tov, mp, tmFga, tmFta, tmTov, tmMp)
+    print(f"Usage Rate Percentage: {usg:3f}")
+
 # Value over Replacement Player
-if choice == 3:
+elif choice == 4:
     boxPm = float(input("Box +/- (Plus/Minus)?: "))
     minPlay = int(input("Total minutes played this season?: "))
     teamGames = int(input("Total Number of Team Games Played so far?: "))
     minPer = minPlay / (48 * teamGames)
     vorp = vorpcalc(boxPm, minPer, teamGames)
-    print(f"VORP: {vorp:.3f}")
+    print(f"VORP: {vorp:.1f}%")
