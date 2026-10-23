@@ -1,4 +1,30 @@
 import nba_api
+from nba_api.stats.static import players
+from nba_api.stats.endpoints import playercareerstats
+from nba_api.stats.endpoints import leaguedashteamstats
+
+
+def getSeasonRow(player_id, season):
+    career = playercareerstats.PlayerCareerStats(player_id=player_id, timeout=30)
+    df = career.get_data_frames()[0]
+    season_rows = df[df["SEASON_ID"] == season]
+    if season_rows.empty:
+        return None
+    return season_rows.iloc[0]
+
+def findPlayerID(name):
+    matches = players.find_players_by_full_name
+    if not matches:
+        return None
+    return matches[0]["id"]
+
+# gets team totals, only rly needed for usg% as of rn
+def getTeamRow(team_id, season):
+    teams = leaguedashteamstats.LeagueDashTeamStats(
+        season=season, per_mode_detailed="Totals", timeout=30
+    )
+    df = teams.get_data_frames()[0]
+    return df[df["TEAM_ID"] == team_id].iloc[0]
 
 # does the TS% calculations
 def tsper(points, fga, fta):
