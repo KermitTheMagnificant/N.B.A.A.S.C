@@ -3,7 +3,7 @@ from nba_api.stats.static import players
 from nba_api.stats.endpoints import playercareerstats
 from nba_api.stats.endpoints import leaguedashteamstats
 
-
+# gets season stats for a player
 def getSeasonRow(player_id, season):
     career = playercareerstats.PlayerCareerStats(player_id=player_id, timeout=30)
     df = career.get_data_frames()[0]
@@ -12,6 +12,7 @@ def getSeasonRow(player_id, season):
         return None
     return season_rows.iloc[0]
 
+#gets a player id from their name
 def findPlayerID(name):
     matches = players.find_players_by_full_name
     if not matches:
