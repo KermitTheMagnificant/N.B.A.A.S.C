@@ -4,4 +4,5 @@
 <p>You can do this by running 'pip install nba_api'.</p>
 <h3>Current Features</h3>
 <p>TS%, eFG%, VORP, USG%</p>
-
+<h3>Planned Features</h3>
+<p>More stats, the ability to look up players advanced stats, a leaderboard for players advanced stats (e.g, who led in TS% this week?), and GUI.</p>
