@@ -14,7 +14,7 @@ def getSeasonRow(player_id, season):
 
 #gets a player id from their name
 def findPlayerID(name):
-    matches = players.find_players_by_full_name
+    matches = players.find_players_by_full_name(name)
     if not matches:
         return None
     return matches[0]["id"]
@@ -60,47 +60,90 @@ def usgcalc(fga, fta, tov, mp, tmFga, tmFta, tmTov, tmMp):
 print("------------------------------------------------------------------")
 print("The National Basketball Association Advanced Statistics Calculator")
 print("------------------------------------------------------------------")
-print("Efficiency Stats")
-print("     1) TS%")
-print("     2) eFG%")
-print("     3) USG%")
-print("Season Long Stats")
-print("     4) VORP")
+print("     1) Custom Calculator")
+print("     2) Stat Lookup")
 choice = int(input("Choice: "))
-# True Shooting Percentage Calculator
+
+# all custom calculation choices
 if choice == 1:
-    points = int(input("Points?: "))
-    fga = int(input("Field goal attempts?: "))
-    fta = int(input("Free throw attempts?: "))
-    ts = tsper(points, fga, fta)
-    print(f"The TS% is: {ts:.1%}")
+    print("What Statistic would you like to calculate?")
+    print("     1) True Shooting Percentage (TS%)")
+    print("     2) Effective Field Goal Percentage (eFG%)")
+    print("     3) Value Over Replacement Player (VORP)")
+    print("     4) Usage Rate Percentage (USG%)")
+    choice = int(input("Choice?: "))
 
-# Efficiency Field Goal Percentage
+    # True Shooting Percentage Calculator
+    if choice == 1:
+        points = int(input("Points?: "))
+        fga = int(input("Field goal attempts?: "))
+        fta = int(input("Free throw attempts?: "))
+        ts = tsper(points, fga, fta)
+        print(f"The TS% is: {ts:.1%}")
+
+    # Efficiency Field Goal Percentage
+    elif choice == 2:
+        fgm = int(input("Total field goals made?: "))
+        tpm = int(input("Total 3-Pointers made?: "))
+        fga = int(input("Field Goal Attempts?: "))
+        efg = efgper(fgm, tpm, fga)
+        print(f"eFG%: {efg}")
+
+    # Value over Replacement Player
+    elif choice == 3:
+        boxPm = float(input("Box +/- (Plus/Minus)?: "))
+        minPlay = int(input("Total minutes played this season?: "))
+        teamGames = int(input("Total Number of Team Games Played so far?: "))
+        minPer = minPlay / (48 * teamGames)
+        vorp = vorpcalc(boxPm, minPer, teamGames)
+        print(f"VORP: {vorp:.1f}")
+
+    # Usage Rate Percentage
+    elif choice == 4:
+        fga = int(input("Field goals attempted?: "))
+        fta = int(input("Free throws attempted?:"))
+        tov = int(input("Turnovers?: "))
+        mp = int(input("Minutes Played?: "))
+        tmFga = int(input("Team Field Goals Attempted?: "))
+        tmFta = int(input("Team Free Throws Attempted?: "))
+        tmMp = int(input("Team Minutes Played?: "))
+        tmTov = int(input("Team Turnovers?: "))
+        usg = usgcalc(fga, fta, tov, mp, tmFga, tmFta, tmTov, tmMp)
+        print(f"Usage Rate Percentage: {usg:3f}")
+
+# player advstat lookup
 elif choice == 2:
-    fgm = int(input("Total field goals made?: "))
-    tpm = int(input("Total 3-Pointers made?: "))
-    fga = int(input("Field Goal Attempts?: "))
-    efg = efgper(fgm, tpm, fga)
-    print(f"eFG%: {efg}")
+    print("First, what Advanced Statistic would you like to lookup?")
+    print("     1) True Shooting Percentage (TS%)")
+    print("     2) Effective Field Goal Percentage (eFG%)")
+    choice = int(input("Choice?: "))
 
-# Usage Rate Percentage
-elif choice == 3:
-    fga = int(input("Field goals attempted?: "))
-    fta = int(input("Free throws attempted?:"))
-    tov = int(input("Turnovers?: "))
-    mp = int(input("Minutes Played?: "))
-    tmFga = int(input("Team Field Goals Attempted?: "))
-    tmFta = int(input("Team Free Throws Attempted?: "))
-    tmMp = int(input("Team Minutes Played?: "))
-    tmTov = int(input("Team Turnovers?: "))
-    usg = usgcalc(fga, fta, tov, mp, tmFga, tmFta, tmTov, tmMp)
-    print(f"Usage Rate Percentage: {usg:3f}")
+    # True Shooting percentage
+    if choice == 1:
+        name = str(input("What is the name of the player? (ex: LeBron James): "))
+        season = str(input("What season would you like to lookup? (ex: 2025-26): "))
+        playerID = findPlayerID(name)
+        if playerID is None:
+            print("Player not found. Follow name convention in example.")
+        else:
+            row = getSeasonRow(playerID, season)
+            if row is None:
+                print("No stats for that season. Make sure you followed the convention in the example or entered the correct year.")
+            else:
+                ts = tsper(row["PTS"], row["FGA"], row["FTA"])
+                print(f"{name} {season} TS%: {ts:.1%}")
 
-# Value over Replacement Player
-elif choice == 4:
-    boxPm = float(input("Box +/- (Plus/Minus)?: "))
-    minPlay = int(input("Total minutes played this season?: "))
-    teamGames = int(input("Total Number of Team Games Played so far?: "))
-    minPer = minPlay / (48 * teamGames)
-    vorp = vorpcalc(boxPm, minPer, teamGames)
-    print(f"VORP: {vorp:.1f}%")
+    # Effective Field Goal Percentage
+    elif choice == 2:
+        name = str(input("What is the name of the player? (ex: LeBron James): "))
+        season = str(input("What season would you like to lookup? (ex: 2025-26): "))
+        playerID = findPlayerID(name)
+        if playerID is None:
+            print("Player not found. Follow name convention in example.")
+        else:
+            row = getSeasonRow(playerID, season)
+            if row is None:
+                print("No stats for that season. Make sure you followed the convention in the example or entered the correct year.")
+            else:
+                efg = efgper(row["FGM"], row["FG3M"], row["FGA"])
+                print(f"{name} {season} eFG%: {efg:.1%}")
