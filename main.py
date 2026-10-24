@@ -177,14 +177,14 @@ elif choice == 2:
                 team = getTeamRow(row["TEAM_ID"], season)
                 teamGames = team["GP"]
                 if teamGames == 0:
-                    print("The {team} haven't played any games yet!")
+                    print(f"The {team['TEAM_NAME']} haven't played any games yet!")
                 else:
                     minPer = row["MIN"] / (48 * teamGames)
                     vorp = vorpcalc(boxPm, minPer, teamGames)
                     print(f"{name} {season} VORP: {vorp:.1f}")
 
     # Usage Rate Percentage
-    if choice == 4: 
+    elif choice == 4: 
         name = str(input("What is the name of the player? (ex: LeBron James): "))
         season = str(input("What season would you like to lookup? (ex: 2025-26): "))
         playerID = findPlayerID(name)
@@ -194,6 +194,8 @@ elif choice == 2:
             row = getSeasonRow(playerID, season)
             if row is None:
                 print("No stats for that season. Make sure you followed the convention in the example or entered the correct year.")
+            elif row["TEAM_ID"] == 0:
+                print("This player was traded midseason, so the team lookup doesn't work, sorry!")
             else:
                 team = getTeamRow(row["TEAM_ID"], season)
                 teamMp = team["MIN"] * 5
@@ -202,9 +204,9 @@ elif choice == 2:
                     team["FGA"], team["FTA"], team["TOV"], teamMp                    
                     )
                 print(f"{name} {season} USG%: {usg:.1f}")
-                
+
     # Per 36
-    if choice == 5:
+    elif choice == 5:
         name = str(input("What is the name of the player? (ex: LeBron James): "))
         season = str(input("What season would you like to lookup? (ex: 2025-26): "))
         playerID = findPlayerID(name)
@@ -220,8 +222,8 @@ elif choice == 2:
                     print("No statistics for the entered season.")
                 else:
                     print(f"{name}, {season} stats per 36 minutes:")
-                    stats = [("Points", "PTS"), ("Rebounds", "REB"), ("Assists", "AST"), 
-                             ("Blocks", "BLK"), ("Steals", "STL"), ("Turnovers", "TOV")]
+                    stats = [("Points", "PTS"), ("Rebounds", "REB"), ("Assists", "AST"),
+                            ("Blocks", "BLK"), ("Steals", "STL"), ("Turnovers", "TOV")]
                     for label, column in stats:
                         value = per36(row[column], row["MIN"])
                         print(f"      {label}: {value:.1f}")
