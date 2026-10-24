@@ -2,6 +2,7 @@ import nba_api
 from nba_api.stats.static import players
 from nba_api.stats.endpoints import playercareerstats
 from nba_api.stats.endpoints import leaguedashteamstats
+from nba_api.stats.endpoints import boxscoretraditionalv3
 
 # gets season stats for a player
 def getSeasonRow(player_id, season):
@@ -57,9 +58,16 @@ def usgcalc(fga, fta, tov, mp, tmFga, tmFta, tmTov, tmMp):
     usgper = 100 * (player_poss * (tmMp / 5)) / (mp * team_poss)
     return usgper
 
-print("------------------------------------------------------------------")
-print("The National Basketball Association Advanced Statistics Calculator")
-print("------------------------------------------------------------------")
+# does per 36 minute calculations, only for player lookup
+def per36(stat, minutes):
+    if minutes == 0:
+        return 0.0
+    return stat / minutes * 36
+
+
+print("----------------------------------------------------------------------")
+print("| The National Basketball Association Advanced Statistics Calculator |")
+print("----------------------------------------------------------------------")
 print("     1) Custom Calculator")
 print("     2) Stat Lookup")
 choice = int(input("Choice: "))
@@ -116,6 +124,9 @@ elif choice == 2:
     print("First, what Advanced Statistic would you like to lookup?")
     print("     1) True Shooting Percentage (TS%)")
     print("     2) Effective Field Goal Percentage (eFG%)")
+    print("     3) Value Over Replacement Player (VORP)")
+    print("     4) Usage Rate Percentage (USG%)")
+    print("     5) Players Per 36 Minutes Stats")
     choice = int(input("Choice?: "))
 
     # True Shooting percentage
@@ -147,3 +158,70 @@ elif choice == 2:
             else:
                 efg = efgper(row["FGM"], row["FG3M"], row["FGA"])
                 print(f"{name} {season} eFG%: {efg:.1%}")
+
+    # Value Over Replacement Player
+    elif choice == 3:
+        name = str(input("What is the name of the player? (ex: LeBron James): "))
+        season = str(input("What season would you like to lookup? (ex: 2025-26): "))
+        boxPm = float(input("What was the Box +/- for that season (look on Basketball Reference)?: "))
+        playerID = findPlayerID(name)
+        if playerID is None:
+            print("Player not found. Follow name convention in example.")
+        else:
+            row = getSeasonRow(playerID, season)
+            if row is None:
+                print("No stats for that season. Make sure you followed the convention in the example or entered the correct year.")
+            elif row["TEAM_ID"] == 0:
+                print("This player was traded midseason, so the team lookup doesn't work, sorry!")
+            else:
+                team = getTeamRow(row["TEAM_ID"], season)
+                teamGames = team["GP"]
+                if teamGames == 0:
+                    print("The {team} haven't played any games yet!")
+                else:
+                    minPer = row["MIN"] / (48 * teamGames)
+                    vorp = vorpcalc(boxPm, minPer, teamGames)
+                    print(f"{name} {season} VORP: {vorp:.1f}")
+
+    # Usage Rate Percentage
+    if choice == 4: 
+        name = str(input("What is the name of the player? (ex: LeBron James): "))
+        season = str(input("What season would you like to lookup? (ex: 2025-26): "))
+        playerID = findPlayerID(name)
+        if playerID is None:
+            print("Player not found. Follow name convention in example.")
+        else:
+            row = getSeasonRow(playerID, season)
+            if row is None:
+                print("No stats for that season. Make sure you followed the convention in the example or entered the correct year.")
+            else:
+                team = getTeamRow(row["TEAM_ID"], season)
+                teamMp = team["MIN"] * 5
+                usg = usgcalc(
+                    row["FGA"], row["FTA"], row["TOV"], row["MIN"],
+                    team["FGA"], team["FTA"], team["TOV"], teamMp                    
+                    )
+                print(f"{name} {season} USG%: {usg:.1f}")
+                
+    # Per 36
+    if choice == 5:
+        name = str(input("What is the name of the player? (ex: LeBron James): "))
+        season = str(input("What season would you like to lookup? (ex: 2025-26): "))
+        playerID = findPlayerID(name)
+        if playerID is None:
+            print("Player not found. Follow name convention in example.")
+        else:
+            row = getSeasonRow(playerID, season)
+            if row is None:
+                print("No stats for that season. Make sure you followed the convention in the example or entered the correct year.")
+            else:
+                row = getSeasonRow(playerID, season)
+                if row is None:
+                    print("No statistics for the entered season.")
+                else:
+                    print(f"{name}, {season} stats per 36 minutes:")
+                    stats = [("Points", "PTS"), ("Rebounds", "REB"), ("Assists", "AST"), 
+                             ("Blocks", "BLK"), ("Steals", "STL"), ("Turnovers", "TOV")]
+                    for label, column in stats:
+                        value = per36(row[column], row["MIN"])
+                        print(f"      {label}: {value:.1f}")
