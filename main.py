@@ -1,4 +1,3 @@
-import nba_api
 from nba_api.stats.static import players
 from nba_api.stats.endpoints import playercareerstats
 from nba_api.stats.endpoints import leaguedashteamstats
@@ -64,6 +63,27 @@ def per36(stat, minutes):
         return 0.0
     return stat / minutes * 36
 
+# Three Point Attempt Rate
+def threeparate(fg3a, fga):
+    if fga == 0:
+        return 0
+    return fg3a / fga
+
+# used for player lookup
+def promptForSeasonRow():
+    name = input("What is the name of the player? (ex: LeBron James): ")
+    season = input("What season would you like to lookup? (ex: 2025-26): ")
+    playerID = findPlayerID(name)
+    if playerID is None:
+        print("Player not found. Follow name convention in example.")
+        return None, None, None
+    row = getSeasonRow(playerID, season)
+    if row is None:
+        print("No stats for that season. Check the format and year.")
+        return None, None, None
+    return name, season, row
+
+
 
 print("----------------------------------------------------------------------")
 print("| The National Basketball Association Advanced Statistics Calculator |")
@@ -117,7 +137,7 @@ if choice == 1:
         tmMp = int(input("Team Minutes Played?: "))
         tmTov = int(input("Team Turnovers?: "))
         usg = usgcalc(fga, fta, tov, mp, tmFga, tmFta, tmTov, tmMp)
-        print(f"Usage Rate Percentage: {usg:3f}")
+        print(f"Usage Rate Percentage: {usg:.1f}")
 
 # player advstat lookup
 elif choice == 2:
@@ -127,6 +147,7 @@ elif choice == 2:
     print("     3) Value Over Replacement Player (VORP)")
     print("     4) Usage Rate Percentage (USG%)")
     print("     5) Players Per 36 Minutes Stats")
+    print("     6) Three Point Attempt Rate")
     choice = int(input("Choice?: "))
 
     # True Shooting percentage
@@ -218,12 +239,30 @@ elif choice == 2:
                 print("No stats for that season. Make sure you followed the convention in the example or entered the correct year.")
             else:
                 row = getSeasonRow(playerID, season)
+                print(f"{name}, {season} stats per 36 minutes:")
+                stats = [("Points", "PTS"), ("Rebounds", "REB"), ("Assists", "AST"),
+                         ("Blocks", "BLK"), ("Steals", "STL"), ("Turnovers", "TOV")]
+                for label, column in stats:
+                    value = per36(row[column], row["MIN"])
+                    print(f"      {label}: {value:.1f}")
+
+    # 3 point attempt rate
+    elif choice == 6:
+        name = str(input("What is the name of the player? (ex: LeBron James): "))
+        season = str(input("What season would you like to lookup? (ex: 2025-26): "))
+        playerID = findPlayerID(name)
+        if playerID is None:
+            print("Player not found. Follow name convention in example.")
+        else:
+            row = getSeasonRow(playerID, season)
+            if row is None:
+                print("No stats for that season. Make sure you followed the convention in the example or entered the correct year.")
+            else:
+                row = getSeasonRow(playerID, season)
                 if row is None:
                     print("No statistics for the entered season.")
                 else:
-                    print(f"{name}, {season} stats per 36 minutes:")
-                    stats = [("Points", "PTS"), ("Rebounds", "REB"), ("Assists", "AST"),
-                            ("Blocks", "BLK"), ("Steals", "STL"), ("Turnovers", "TOV")]
-                    for label, column in stats:
-                        value = per36(row[column], row["MIN"])
-                        print(f"      {label}: {value:.1f}")
+                    fg3a = row["FG3A"]
+                    fga = row["FGA"]
+                    fg3ar = threeparate(fg3a, fga)
+                    print(f"{name} {season} 3 Point Attempt Rate: {fg3ar:.3f}")
