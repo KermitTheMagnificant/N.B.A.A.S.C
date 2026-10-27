@@ -69,6 +69,11 @@ def threeparate(fg3a, fga):
         return 0
     return fg3a / fga
 
+def percalc(pts, trb, ast, stl, blk, fgmi, ftmi, tov, gp):
+    if gp == 0:
+        return 0
+    return (pts + trb + ast + stl + blk - fgmi - ftmi - tov) / gp
+
 # used for player lookup
 def promptForSeasonRow():
     name = input("What is the name of the player? (ex: LeBron James): ")
@@ -148,6 +153,7 @@ elif choice == 2:
     print("     4) Usage Rate Percentage (USG%)")
     print("     5) Players Per 36 Minutes Stats")
     print("     6) Three Point Attempt Rate")
+    print("     7) Player Efficiency Rating (PER)")
     choice = int(input("Choice?: "))
 
     # True Shooting percentage
@@ -266,3 +272,27 @@ elif choice == 2:
                     fga = row["FGA"]
                     fg3ar = threeparate(fg3a, fga)
                     print(f"{name} {season} 3 Point Attempt Rate: {fg3ar:.3f}")
+
+    # Player Efficiency Rating (PER)
+    elif choice == 7:
+        name = str(input("What is the name of the player? (ex: LeBron James): "))
+        season = str(input("What season would you like to lookup? (ex: 2025-26): "))
+        playerID = findPlayerID(name)
+        if playerID is None:
+            print("Player not found. Follow name convention in example.")
+        else:
+            row = getSeasonRow(playerID, season)
+            if row is None:
+                print("No stats for that season. Make sure you followed the convention in the example or entered the correct year.")
+            else:
+                pts = row["PTS"]
+                trb = row["REB"]
+                ast = row["AST"]
+                stl = row["STL"]
+                blk = row["BLK"]
+                fgmi = row["FGA"] - row["FGM"]
+                ftmi = row["FTA"] - row["FTM"]
+                tov = row["TOV"]
+                gp = row["GP"]
+                per = percalc(pts, trb, ast, stl, blk, fgmi, ftmi, tov, gp)
+                print(f"{name} {season} Player Efficiency Rating: {per:.3f}")
