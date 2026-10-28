@@ -2,6 +2,7 @@ from nba_api.stats.static import players
 from nba_api.stats.endpoints import playercareerstats
 from nba_api.stats.endpoints import leaguedashteamstats
 from nba_api.stats.endpoints import boxscoretraditionalv3
+debugMode = True
 
 # gets season stats for a player
 def getSeasonRow(player_id, season):
@@ -76,17 +77,21 @@ def percalc(pts, trb, ast, stl, blk, fgmi, ftmi, tov, gp):
 
 # used for player lookup
 def promptForSeasonRow():
-    name = input("What is the name of the player? (ex: LeBron James): ")
-    season = input("What season would you like to lookup? (ex: 2025-26): ")
-    playerID = findPlayerID(name)
-    if playerID is None:
-        print("Player not found. Follow name convention in example.")
-        return None, None, None
-    row = getSeasonRow(playerID, season)
-    if row is None:
-        print("No stats for that season. Check the format and year.")
-        return None, None, None
-    return name, season, row
+    if debugMode == True:
+        name = "LeBron James"
+        season = "2025-26"
+    else:
+        name = input("What is the name of the player? (ex: LeBron James): ")
+        season = input("What season would you like to lookup? (ex: 2025-26): ")
+        playerID = findPlayerID(name)
+        if playerID is None:
+            print("Player not found. Follow name convention in example.")
+            return None, None, None
+        row = getSeasonRow(playerID, season)
+        if row is None:
+            print("No stats for that season. Check the format and year.")
+            return None, None, None
+            return name, season, row
 
 
 
