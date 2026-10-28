@@ -1,9 +1,26 @@
 from nba_api.stats.static import players
 from nba_api.stats.endpoints import playercareerstats
 from nba_api.stats.endpoints import leaguedashteamstats
-from nba_api.stats.endpoints import boxscoretraditionalv3
+from datetime import date, timedelta
+from nba_api.stats.endpoints import leaguedashplayerstats
+
 debugMode = True
 
+def currentSeason():
+    today = date.today()
+    startYear = today.year if today.month >= 10 else today.year - 1
+    return f"{startYear}-{str(startYear + 1)[-2:]}"
+
+def getWeekStats():
+    today = date.today()
+    weekAgo = today - timedelta(days=7)
+    stats = leaguedashplayerstats.LeagueDashPlayerStats(
+        season=currentSeason(),
+        per_mode_detailed="Totals",
+        date_from_nullable=weekAgo.strftime("%m/%d/%Y"),
+        date_to_nullable=today.strftime("%m/%d/%Y"),
+        timeout=30
+    )
 # gets season stats for a player
 def getSeasonRow(player_id, season):
     career = playercareerstats.PlayerCareerStats(player_id=player_id, timeout=30)
