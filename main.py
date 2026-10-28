@@ -6,11 +6,13 @@ from nba_api.stats.endpoints import leaguedashplayerstats
 
 debugMode = True
 
+# gets the current season
 def currentSeason():
     today = date.today()
     startYear = today.year if today.month >= 10 else today.year - 1
     return f"{startYear}-{str(startYear + 1)[-2:]}"
 
+# gets stats for the week
 def getWeekStats():
     today = date.today()
     weekAgo = today - timedelta(days=7)
