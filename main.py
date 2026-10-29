@@ -23,6 +23,8 @@ def getWeekStats():
         date_to_nullable=today.strftime("%m/%d/%Y"),
         timeout=30
     )
+    return stats.get_data_frames()[0]
+
 # gets season stats for a player
 def getSeasonRow(player_id, season):
     career = playercareerstats.PlayerCareerStats(player_id=player_id, timeout=30)
@@ -96,21 +98,57 @@ def percalc(pts, trb, ast, stl, blk, fgmi, ftmi, tov, gp):
 
 # used for player lookup
 def promptForSeasonRow():
-    if debugMode == True:
+    if debugMode:
         name = "LeBron James"
         season = "2025-26"
     else:
         name = input("What is the name of the player? (ex: LeBron James): ")
         season = input("What season would you like to lookup? (ex: 2025-26): ")
-        playerID = findPlayerID(name)
-        if playerID is None:
-            print("Player not found. Follow name convention in example.")
-            return None, None, None
-        row = getSeasonRow(playerID, season)
-        if row is None:
-            print("No stats for that season. Check the format and year.")
-            return None, None, None
-            return name, season, row
+
+    playerID = findPlayerID(name)
+    if playerID is None:
+        print("Player not found. Follow name convention in example.")
+        return None, None, None
+    row = getSeasonRow(playerID, season)
+    if row is None:
+        print("No stats for that season. Check the format and year.")
+        return None, None, None
+    return name, season, row
+
+
+leaderboardStats = {
+    "1": {"label": "Points per game",
+          "calc": lambda r: r["PTS"] / r["GP"], "percent": False, "minFga": 0},
+    "2": {"label": "Rebounds per game",
+          "calc": lambda r: r["REB"] / r["GP"], "percent": False, "minFga": 0},
+    "3": {"label": "Assists per game",
+          "calc": lambda r: r["AST"] / r["GP"], "percent": False, "minFga": 0},
+    "4": {"label": "True Shooting % (TS%)",
+          "calc": lambda r: tsper(r["PTS"], r["FGA"], r["FTA"]), "percent": True, "minFga": 20},
+    "5": {"label": "Effective FG% (eFG%)",
+          "calc": lambda r: efgper(r["FGM"], r["FG3M"], r["FGA"]), "percent": True, "minFga": 20},
+}
+
+def buildLeaderboard(df, statFunc, minGames, minFga):
+    results = []
+    for index, row in df.iterrows():
+        if row["GP"] < minGames:
+            continue
+        if row["FGA"] < minFga:
+            continue
+        value = statFunc(row)
+        results.append((row["PLAYER_NAME"], row["TEAM_ABBREVIATION"], value))
+    results.sort(key=lambda item: item[2], reverse=True)
+    return results
+
+def printLeaderboard(results, label, isPercent, topN=10):
+    print(f"Top {topN} this week: {label}")
+    for rank, (name, team, value) in enumerate(results[:topN], start=1):
+        if isPercent:
+            shown = f"{value:.1%}"
+        else:
+            shown = f"{value:.1f}"
+        print(f"  {rank:>2}. {name} ({team}): {shown}")
 
 
 
@@ -119,6 +157,7 @@ print("| The National Basketball Association Advanced Statistics Calculator |")
 print("----------------------------------------------------------------------")
 print("     1) Custom Calculator")
 print("     2) Stat Lookup")
+print("     3) Stat Leaderboard")
 choice = int(input("Choice: "))
 
 # all custom calculation choices
@@ -320,3 +359,19 @@ elif choice == 2:
                 gp = row["GP"]
                 per = percalc(pts, trb, ast, stl, blk, fgmi, ftmi, tov, gp)
                 print(f"{name} {season} Player Efficiency Rating: {per:.3f}")
+
+elif choice == 3:
+    print("Which stat would you like the weekly leaders for?")
+    for key, info in leaderboardStats.items():
+        print(f"     {key}) {info['label']}")
+    pick = input("Choice?: ")
+    if pick not in leaderboardStats:
+        print("That isn't one of the options.")
+    else:
+        info = leaderboardStats[pick]
+        df = getWeekStats()
+        if df.empty:
+            print("No games found in the last 7 days.")
+        else:
+            results = buildLeaderboard(df, info["calc"], 2, info["minFga"])
+            printLeaderboard(results, info["label"], info["percent"])
