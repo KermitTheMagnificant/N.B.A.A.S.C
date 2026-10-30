@@ -26,6 +26,14 @@ A calculator for advanced stats for basketball. You can either calculate using y
 TS%, eFG%, VORP, USG%, player lookup for TS% and eFG%, VORP, USG%, Per 36 Stats, 3 Point Attempt Rate, and Player Efficiency Rating.
 There is also a weekly statistic leaderboard, where you can see the leaders in PPG, RPG, APG, True Shooting Percentage, and Efficient Field goal Percentage.
 
+There is also now a gui, which you can run with:
+
+```bash
+python3 gui.pt
+```
+
+As of right now, it only has the calculator portion, but the leaderboard and statistics will be added in the future!
+
 ### Planned Features
 
-More stats, and a GUI.
+More stats
