@@ -29,7 +29,7 @@ There is also a weekly statistic leaderboard, where you can see the leaders in P
 There is also now a gui, which you can run with:
 
 ```bash
-python3 gui.pt
+python3 gui.py
 ```
 
 As of right now, it only has the calculator portion, but the leaderboard and statistics will be added in the future!
