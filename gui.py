@@ -7,7 +7,7 @@ from main import tsper, efgper, vorpcalc, usgcalc
 root = tk.Tk()
 
 root.title("National Basketball Association Advanced Statistics Calculator")
-root.geometry("500x600")
+root.geometry("600x600")
 
 # =====================================================================
 # SECTION 2: THE THREE SCREENS (frames stacked in the same spot)
@@ -87,7 +87,12 @@ def calcUSG(fga, fta, tov, mp, tmFga, tmFta, tmMp, tmTov):
     return f"USG%: {usg:.1f}"
 
 # =====================================================================
-# SECTION 6: CALCULATOR SCREEN - build the forms and the dropdown
+# SECTION 6: STATISTICS SCREEN - Form Building 
+# =====================================================================
+
+
+# =====================================================================
+# SECTION 7: CALCULATOR SCREEN - build the forms and the dropdown
 # =====================================================================
 forms = {
     "True Shooting % (TS%)": makeCalcForm(pageCalc, "True Shooting % (TS%)",
