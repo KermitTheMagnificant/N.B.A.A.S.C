@@ -151,6 +151,14 @@ def printLeaderboard(results, label, isPercent, topN=10):
         print(f"  {rank:>2}. {name} ({team}): {shown}")
 
 
+def readMenuChoice(prompt):
+    try:
+        return int(input(prompt))
+    except ValueError:
+        print("Please enter a numeric menu choice.")
+        return None
+
+
 def main_loop():
     running = True
 
@@ -161,7 +169,9 @@ def main_loop():
         print("     1) Custom Calculator")
         print("     2) Stat Lookup")
         print("     3) Stat Leaderboard")
-        choice = int(input("Choice: "))
+        choice = readMenuChoice("Choice: ")
+        if choice is None:
+            continue
 
         # all custom calculation choices
         if choice == 1:
@@ -170,7 +180,9 @@ def main_loop():
             print("     2) Effective Field Goal Percentage (eFG%)")
             print("     3) Value Over Replacement Player (VORP)")
             print("     4) Usage Rate Percentage (USG%)")
-            choice = int(input("Choice?: "))
+            choice = readMenuChoice("Choice?: ")
+            if choice is None:
+                continue
 
             # True Shooting Percentage Calculator
             if choice == 1:
@@ -220,7 +232,9 @@ def main_loop():
             print("     5) Players Per 36 Minutes Stats")
             print("     6) Three Point Attempt Rate")
             print("     7) Player Efficiency Rating (PER)")
-            choice = int(input("Choice?: "))
+            choice = readMenuChoice("Choice?: ")
+            if choice is None:
+                continue
 
             # True Shooting percentage
             if choice == 1:
