@@ -4,8 +4,6 @@ from nba_api.stats.endpoints import leaguedashteamstats
 from datetime import date, timedelta
 from nba_api.stats.endpoints import leaguedashplayerstats
 
-debugMode = True
-
 # gets the current season
 def currentSeason():
     today = date.today()
@@ -98,13 +96,8 @@ def percalc(pts, trb, ast, stl, blk, fgmi, ftmi, tov, gp):
 
 # used for player lookup
 def promptForSeasonRow():
-    if debugMode:
-        name = "LeBron James"
-        season = "2025-26"
-    else:
-        name = input("What is the name of the player? (ex: LeBron James): ")
-        season = input("What season would you like to lookup? (ex: 2025-26): ")
-
+    name = input("What is the name of the player? (ex: LeBron James): ")
+    season = input("What season would you like to lookup? (ex: 2025-26): ")
     playerID = findPlayerID(name)
     if playerID is None:
         print("Player not found. Follow name convention in example.")
@@ -114,6 +107,65 @@ def promptForSeasonRow():
         print("No stats for that season. Check the format and year.")
         return None, None, None
     return name, season, row
+
+
+def lookupPlayerStat(choice):
+    if choice not in range(1, 8):
+        print("That isn't one of the options.")
+        return
+
+    name, season, row = promptForSeasonRow()
+    if row is None:
+        return
+
+    if choice == 1:
+        value = tsper(row["PTS"], row["FGA"], row["FTA"])
+        print(f"{name} {season} TS%: {value:.1%}")
+    elif choice == 2:
+        value = efgper(row["FGM"], row["FG3M"], row["FGA"])
+        print(f"{name} {season} eFG%: {value:.1%}")
+    elif choice == 3:
+        boxPm = float(input("What was the Box +/- for that season (look on Basketball Reference)?: "))
+        if row["TEAM_ID"] == 0:
+            print("This player was traded midseason, so the team lookup doesn't work, sorry!")
+            return
+        team = getTeamRow(row["TEAM_ID"], season)
+        teamGames = team["GP"]
+        if teamGames == 0:
+            print(f"The {team['TEAM_NAME']} haven't played any games yet!")
+            return
+        minPer = row["MIN"] / (48 * teamGames)
+        value = vorpcalc(boxPm, minPer, teamGames)
+        print(f"{name} {season} VORP: {value:.1f}")
+    elif choice == 4:
+        if row["TEAM_ID"] == 0:
+            print("This player was traded midseason, so the team lookup doesn't work, sorry!")
+            return
+        team = getTeamRow(row["TEAM_ID"], season)
+        teamMp = team["MIN"] * 5
+        value = usgcalc(
+            row["FGA"], row["FTA"], row["TOV"], row["MIN"],
+            team["FGA"], team["FTA"], team["TOV"], teamMp,
+        )
+        print(f"{name} {season} USG%: {value:.1f}")
+    elif choice == 5:
+        print(f"{name}, {season} stats per 36 minutes:")
+        stats = [("Points", "PTS"), ("Rebounds", "REB"), ("Assists", "AST"),
+                 ("Blocks", "BLK"), ("Steals", "STL"), ("Turnovers", "TOV")]
+        for label, column in stats:
+            value = per36(row[column], row["MIN"])
+            print(f"      {label}: {value:.1f}")
+    elif choice == 6:
+        value = threeparate(row["FG3A"], row["FGA"])
+        print(f"{name} {season} 3 Point Attempt Rate: {value:.3f}")
+    elif choice == 7:
+        fgmi = row["FGA"] - row["FGM"]
+        ftmi = row["FTA"] - row["FTM"]
+        value = percalc(
+            row["PTS"], row["REB"], row["AST"], row["STL"], row["BLK"],
+            fgmi, ftmi, row["TOV"], row["GP"],
+        )
+        print(f"{name} {season} Player Efficiency Rating: {value:.3f}")
 
 
 leaderboardStats = {
@@ -222,7 +274,7 @@ def main_loop():
                 usg = usgcalc(fga, fta, tov, mp, tmFga, tmFta, tmTov, tmMp)
                 print(f"Usage Rate Percentage: {usg:.1f}")
 
-        # player advstat lookup
+        # player advanced-stat lookup
         elif choice == 2:
             print("First, what Advanced Statistic would you like to lookup?")
             print("     1) True Shooting Percentage (TS%)")
@@ -232,150 +284,10 @@ def main_loop():
             print("     5) Players Per 36 Minutes Stats")
             print("     6) Three Point Attempt Rate")
             print("     7) Player Efficiency Rating (PER)")
-            choice = readMenuChoice("Choice?: ")
-            if choice is None:
+            statChoice = readMenuChoice("Choice?: ")
+            if statChoice is None:
                 continue
-
-            # True Shooting percentage
-            if choice == 1:
-                name = str(input("What is the name of the player? (ex: LeBron James): "))
-                season = str(input("What season would you like to lookup? (ex: 2025-26): "))
-                playerID = findPlayerID(name)
-                if playerID is None:
-                    print("Player not found. Follow name convention in example.")
-                else:
-                    row = getSeasonRow(playerID, season)
-                    if row is None:
-                        print("No stats for that season. Make sure you followed the convention in the example or entered the correct year.")
-                    else:
-                        ts = tsper(row["PTS"], row["FGA"], row["FTA"])
-                        print(f"{name} {season} TS%: {ts:.1%}")
-
-            # Effective Field Goal Percentage
-            elif choice == 2:
-                name = str(input("What is the name of the player? (ex: LeBron James): "))
-                season = str(input("What season would you like to lookup? (ex: 2025-26): "))
-                playerID = findPlayerID(name)
-                if playerID is None:
-                    print("Player not found. Follow name convention in example.")
-                else:
-                    row = getSeasonRow(playerID, season)
-                    if row is None:
-                        print("No stats for that season. Make sure you followed the convention in the example or entered the correct year.")
-                    else:
-                        efg = efgper(row["FGM"], row["FG3M"], row["FGA"])
-                        print(f"{name} {season} eFG%: {efg:.1%}")
-
-            # Value Over Replacement Player
-            elif choice == 3:
-                name = str(input("What is the name of the player? (ex: LeBron James): "))
-                season = str(input("What season would you like to lookup? (ex: 2025-26): "))
-                boxPm = float(input("What was the Box +/- for that season (look on Basketball Reference)?: "))
-                playerID = findPlayerID(name)
-                if playerID is None:
-                    print("Player not found. Follow name convention in example.")
-                else:
-                    row = getSeasonRow(playerID, season)
-                    if row is None:
-                        print("No stats for that season. Make sure you followed the convention in the example or entered the correct year.")
-                    elif row["TEAM_ID"] == 0:
-                        print("This player was traded midseason, so the team lookup doesn't work, sorry!")
-                    else:
-                        team = getTeamRow(row["TEAM_ID"], season)
-                        teamGames = team["GP"]
-                        if teamGames == 0:
-                            print(f"The {team['TEAM_NAME']} haven't played any games yet!")
-                        else:
-                            minPer = row["MIN"] / (48 * teamGames)
-                            vorp = vorpcalc(boxPm, minPer, teamGames)
-                            print(f"{name} {season} VORP: {vorp:.1f}")
-
-            # Usage Rate Percentage
-            elif choice == 4:
-                name = str(input("What is the name of the player? (ex: LeBron James): "))
-                season = str(input("What season would you like to lookup? (ex: 2025-26): "))
-                playerID = findPlayerID(name)
-                if playerID is None:
-                    print("Player not found. Follow name convention in example.")
-                else:
-                    row = getSeasonRow(playerID, season)
-                    if row is None:
-                        print("No stats for that season. Make sure you followed the convention in the example or entered the correct year.")
-                    elif row["TEAM_ID"] == 0:
-                        print("This player was traded midseason, so the team lookup doesn't work, sorry!")
-                    else:
-                        team = getTeamRow(row["TEAM_ID"], season)
-                        teamMp = team["MIN"] * 5
-                        usg = usgcalc(
-                            row["FGA"], row["FTA"], row["TOV"], row["MIN"],
-                            team["FGA"], team["FTA"], team["TOV"], teamMp
-                            )
-                        print(f"{name} {season} USG%: {usg:.1f}")
-
-            # Per 36
-            elif choice == 5:
-                name = str(input("What is the name of the player? (ex: LeBron James): "))
-                season = str(input("What season would you like to lookup? (ex: 2025-26): "))
-                playerID = findPlayerID(name)
-                if playerID is None:
-                    print("Player not found. Follow name convention in example.")
-                else:
-                    row = getSeasonRow(playerID, season)
-                    if row is None:
-                        print("No stats for that season. Make sure you followed the convention in the example or entered the correct year.")
-                    else:
-                        row = getSeasonRow(playerID, season)
-                        print(f"{name}, {season} stats per 36 minutes:")
-                        stats = [("Points", "PTS"), ("Rebounds", "REB"), ("Assists", "AST"),
-                                 ("Blocks", "BLK"), ("Steals", "STL"), ("Turnovers", "TOV")]
-                        for label, column in stats:
-                            value = per36(row[column], row["MIN"])
-                            print(f"      {label}: {value:.1f}")
-
-            # 3 point attempt rate
-            elif choice == 6:
-                name = str(input("What is the name of the player? (ex: LeBron James): "))
-                season = str(input("What season would you like to lookup? (ex: 2025-26): "))
-                playerID = findPlayerID(name)
-                if playerID is None:
-                    print("Player not found. Follow name convention in example.")
-                else:
-                    row = getSeasonRow(playerID, season)
-                    if row is None:
-                        print("No stats for that season. Make sure you followed the convention in the example or entered the correct year.")
-                    else:
-                        row = getSeasonRow(playerID, season)
-                        if row is None:
-                            print("No statistics for the entered season.")
-                        else:
-                            fg3a = row["FG3A"]
-                            fga = row["FGA"]
-                            fg3ar = threeparate(fg3a, fga)
-                            print(f"{name} {season} 3 Point Attempt Rate: {fg3ar:.3f}")
-
-            # Player Efficiency Rating (PER)
-            elif choice == 7:
-                name = str(input("What is the name of the player? (ex: LeBron James): "))
-                season = str(input("What season would you like to lookup? (ex: 2025-26): "))
-                playerID = findPlayerID(name)
-                if playerID is None:
-                    print("Player not found. Follow name convention in example.")
-                else:
-                    row = getSeasonRow(playerID, season)
-                    if row is None:
-                        print("No stats for that season. Make sure you followed the convention in the example or entered the correct year.")
-                    else:
-                        pts = row["PTS"]
-                        trb = row["REB"]
-                        ast = row["AST"]
-                        stl = row["STL"]
-                        blk = row["BLK"]
-                        fgmi = row["FGA"] - row["FGM"]
-                        ftmi = row["FTA"] - row["FTM"]
-                        tov = row["TOV"]
-                        gp = row["GP"]
-                        per = percalc(pts, trb, ast, stl, blk, fgmi, ftmi, tov, gp)
-                        print(f"{name} {season} Player Efficiency Rating: {per:.3f}")
+            lookupPlayerStat(statChoice)
 
         elif choice == 3:
             print("Which stat would you like the weekly leaders for?")
