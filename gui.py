@@ -1,7 +1,11 @@
+import queue
+import threading
 import tkinter as tk
+from tkinter import ttk
 from main import (
-    currentSeason, efgper, findPlayerID, getSeasonRow, getTeamRow,
-    per36, percalc, threeparate, tsper, usgcalc, vorpcalc,
+    buildLeaderboard, currentSeason, efgper, findPlayerID, getSeasonRow,
+    getTeamRow, getWeekStats, leaderboardStats, per36, percalc,
+    threeparate, tsper, usgcalc, vorpcalc,
 )
 
 # =====================================================================
@@ -54,11 +58,73 @@ for page in (pageCalc, pageStats, pageLeader):
     page.place(relx = 0, rely = 0, relwidth = 1, relheight = 1)
 
 leaderCard = tk.Frame(pageLeader, bg = CARD, highlightbackground = BORDER, highlightthickness = 1)
-leaderCard.place(relx = 0.5, rely = 0.15, relwidth = 0.86, relheight = 0.72, anchor = "n")
-tk.Label(leaderCard, text = "Leaderboard", font = (FONT, 19, "bold"),
-         bg = CARD, fg = TEXT).pack(pady = (42, 8))
-tk.Label(leaderCard, text = "Weekly player leaders are coming soon.", font = (FONT, 11),
-         bg = CARD, fg = MUTED).pack()
+leaderCard.place(relx = 0.5, rely = 0.08, relwidth = 0.92, relheight = 0.88, anchor = "n")
+tk.Label(leaderCard, text = "Weekly Player Leaders", font = (FONT, 19, "bold"),
+         bg = CARD, fg = TEXT).pack(pady = (20, 3))
+tk.Label(leaderCard, text = "Top performers from the last 7 days · minimum 2 games",
+         font = (FONT, 10), bg = CARD, fg = MUTED).pack(pady = (0, 14))
+
+leaderControls = tk.Frame(leaderCard, bg = CARD)
+leaderControls.pack(fill = "x", padx = 24, pady = (0, 12))
+tk.Label(leaderControls, text = "Rank by", font = (FONT, 9, "bold"),
+         bg = CARD, fg = MUTED).pack(side = "left", padx = (0, 8))
+
+leaderStatKeys = {info["label"]: key for key, info in leaderboardStats.items()}
+selectedLeaderStat = tk.StringVar(value = leaderboardStats["1"]["label"])
+leaderMenu = tk.OptionMenu(
+    leaderControls, selectedLeaderStat, *leaderStatKeys.keys(),
+    command = lambda _choice: loadLeaderboard(),
+)
+leaderMenu.pack(side = "left")
+
+leaderRefreshButton = tk.Button(
+    leaderControls, text = "Refresh", command = lambda: loadLeaderboard(),
+    font = (FONT, 9, "bold"), bg = ORANGE, fg = "#FFFFFF",
+    activebackground = ORANGE_HOVER, activeforeground = "#FFFFFF",
+    bd = 0, padx = 18, pady = 8, cursor = "hand2", relief = "flat",
+)
+leaderRefreshButton.pack(side = "right")
+
+leaderStatus = tk.Label(leaderCard, text = "Choose a statistic and refresh to load this week's leaders.",
+                        font = (FONT, 9), bg = CARD, fg = MUTED, anchor = "w", wraplength = 680)
+leaderStatus.pack(fill = "x", padx = 24, pady = (0, 8))
+
+leaderTableFrame = tk.Frame(leaderCard, bg = CARD)
+leaderTableFrame.pack(fill = "both", expand = True, padx = 24, pady = (0, 22))
+
+leaderStyle = ttk.Style(root)
+leaderStyle.configure(
+    "Leader.Treeview", font = (FONT, 10), rowheight = 31,
+    background = CARD, fieldbackground = CARD, foreground = TEXT,
+)
+leaderStyle.configure(
+    "Leader.Treeview.Heading", font = (FONT, 9, "bold"),
+    background = "#EEF2F7", foreground = TEXT, relief = "flat",
+)
+leaderStyle.map("Leader.Treeview", background=[("selected", "#FCE6D9")],
+                foreground=[("selected", TEXT)])
+
+leaderColumns = ("rank", "player", "team", "value")
+leaderTable = ttk.Treeview(
+    leaderTableFrame, columns = leaderColumns, show = "headings",
+    style = "Leader.Treeview", height = 10,
+)
+for column, heading, width, anchor in (
+    ("rank", "RANK", 72, "center"),
+    ("player", "PLAYER", 310, "w"),
+    ("team", "TEAM", 110, "center"),
+    ("value", "VALUE", 150, "center"),
+):
+    leaderTable.heading(column, text = heading)
+    leaderTable.column(column, width = width, anchor = anchor, stretch = column == "player")
+
+leaderScrollbar = ttk.Scrollbar(leaderTableFrame, orient = "vertical", command = leaderTable.yview)
+leaderTable.configure(yscrollcommand = leaderScrollbar.set)
+leaderTable.pack(side = "left", fill = "both", expand = True)
+leaderScrollbar.pack(side = "right", fill = "y")
+
+leaderResultsQueue = queue.Queue()
+leaderLoadInProgress = False
 
 # =====================================================================
 # SECTION 3: SCREEN SWITCHING AND THE TOP BUTTONS
@@ -74,6 +140,67 @@ def showPage(page):
             activeforeground = "#FFFFFF" if isActive else TEXT,
             relief = "flat",
         )
+    if page == pageLeader:
+        loadLeaderboard()
+
+
+def loadLeaderboard():
+    global leaderLoadInProgress
+    if leaderLoadInProgress:
+        return
+
+    statKey = leaderStatKeys[selectedLeaderStat.get()]
+    leaderLoadInProgress = True
+    leaderRefreshButton.configure(state = "disabled")
+    leaderMenu.configure(state = "disabled")
+    leaderStatus.configure(text = f"Loading {leaderboardStats[statKey]['label']} leaders…", fg = MUTED)
+    for item in leaderTable.get_children():
+        leaderTable.delete(item)
+
+    def fetchResults():
+        try:
+            df = getWeekStats()
+            if df.empty:
+                leaderResultsQueue.put((statKey, [], "No games found in the last 7 days.", None))
+                return
+            info = leaderboardStats[statKey]
+            results = buildLeaderboard(df, info["calc"], 2, info["minFga"])[:10]
+            message = None if results else "No players qualified for this leaderboard in the last 7 days."
+            leaderResultsQueue.put((statKey, results, message, None))
+        except Exception as error:
+            leaderResultsQueue.put((statKey, [], None, str(error)))
+
+    threading.Thread(target = fetchResults, daemon = True).start()
+    root.after(100, pollLeaderboardResults)
+
+
+def pollLeaderboardResults():
+    global leaderLoadInProgress
+    try:
+        statKey, results, message, error = leaderResultsQueue.get_nowait()
+    except queue.Empty:
+        root.after(100, pollLeaderboardResults)
+        return
+
+    leaderLoadInProgress = False
+    leaderRefreshButton.configure(state = "normal")
+    leaderMenu.configure(state = "normal")
+
+    if error:
+        leaderStatus.configure(
+            text = f"Could not load leaderboard. Check your connection and try again. ({error})",
+            fg = "#A33A2B",
+        )
+        return
+    if message:
+        leaderStatus.configure(text = message, fg = MUTED)
+        return
+
+    info = leaderboardStats[statKey]
+    leaderStatus.configure(text = f"Top 10 · {info['label']} · last 7 days", fg = MUTED)
+    for rank, (name, team, value) in enumerate(results, start = 1):
+        shownValue = f"{value:.1%}" if info["percent"] else f"{value:.1f}"
+        leaderTable.insert("", "end", values = (rank, name, team, shownValue))
 
 navButtons = {}
 for page, label in ((pageCalc, "Calculator"), (pageStats, "Statistics"),
@@ -343,9 +470,7 @@ styleOptionMenu(menuStats)
 
 onPickStats(selectedStats.get())
 
-# =====================================================================
-# SECTION 8: START THE APP (keep these last)
-# =====================================================================
+# bomboclat wallahi....
 showPage(pageCalc)
 
 root.mainloop()

@@ -32,7 +32,7 @@ There is also now a gui, which you can run with:
 python3 gui.py
 ```
 
-As of right now, it only has the calculator portion, but the leaderboard and statistics will be added in the future!
+The GUI includes calculator and player-stat lookup screens, plus a weekly leaderboard for PPG, RPG, APG, TS%, and eFG%. The leaderboard can be refreshed from the Leaderboard screen and loads results without blocking the interface.
 
 ### Planned Features
 
