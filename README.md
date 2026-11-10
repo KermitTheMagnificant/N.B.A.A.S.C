@@ -36,4 +36,4 @@ The GUI includes calculator and player-stat lookup screens, plus a weekly leader
 
 ### Planned Features
 
-More stats
+More stats, if you have any recs, please reach out (im out of ideas :p)
