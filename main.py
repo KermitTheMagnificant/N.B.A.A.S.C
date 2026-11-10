@@ -109,6 +109,89 @@ def promptForSeasonRow():
     return name, season, row
 
 
+def compareStatRows(stat_choice, row1, row2, team1=None, team2=None, box_pm1=None, box_pm2=None):
+    if stat_choice == "1":
+        return tsper(row1["PTS"], row1["FGA"], row1["FTA"]), tsper(row2["PTS"], row2["FGA"], row2["FTA"])
+    if stat_choice == "2":
+        return efgper(row1["FGM"], row1["FG3M"], row1["FGA"]), efgper(row2["FGM"], row2["FG3M"], row2["FGA"])
+    if stat_choice == "3":
+        if team1 is None or team2 is None:
+            raise ValueError("Team rows are required for VORP comparison.")
+        if box_pm1 is None or box_pm2 is None:
+            raise ValueError("Box +/- values are required for VORP comparison.")
+        min_per1 = row1["MIN"] / (48 * team1["GP"])
+        min_per2 = row2["MIN"] / (48 * team2["GP"])
+        return vorpcalc(float(box_pm1), min_per1, team1["GP"]), vorpcalc(float(box_pm2), min_per2, team2["GP"])
+    if stat_choice == "4":
+        if team1 is None or team2 is None:
+            raise ValueError("Team rows are required for USG comparison.")
+        team_mp1 = team1["MIN"] * 5
+        team_mp2 = team2["MIN"] * 5
+        left = usgcalc(row1["FGA"], row1["FTA"], row1["TOV"], row1["MIN"], team1["FGA"], team1["FTA"], team1["TOV"], team_mp1)
+        right = usgcalc(row2["FGA"], row2["FTA"], row2["TOV"], row2["MIN"], team2["FGA"], team2["FTA"], team2["TOV"], team_mp2)
+        return left, right
+    if stat_choice == "5":
+        stats = [("PTS", "PTS"), ("REB", "REB"), ("AST", "AST"), ("BLK", "BLK"), ("STL", "STL"), ("TOV", "TOV")]
+        left = []
+        right = []
+        for _, column in stats:
+            left.append(per36(row1[column], row1["MIN"]))
+            right.append(per36(row2[column], row2["MIN"]))
+        return left, right
+    raise ValueError(f"Unsupported stat choice: {stat_choice}")
+
+
+def comparePlayersByStat(stat_choice):
+    if stat_choice not in ["1", "2", "3", "4", "5"]:
+        print("That isn't one of the options.")
+        return
+
+    name1, season1, row1 = promptForSeasonRow()
+    name2, season2, row2 = promptForSeasonRow()
+    if row1 is None or row2 is None:
+        return
+
+    team1 = team2 = None
+    box_pm1 = box_pm2 = None
+
+    if stat_choice in ["3", "4"]:
+        if row1["TEAM_ID"] == 0 or row2["TEAM_ID"] == 0:
+            print("One of these players was traded midseason, so the team lookup doesn't work, sorry!")
+            return
+        team1 = getTeamRow(row1["TEAM_ID"], season1)
+        team2 = getTeamRow(row2["TEAM_ID"], season2)
+        if team1["GP"] == 0 or team2["GP"] == 0:
+            print("One of these teams hasn't played any games yet!")
+            return
+        if stat_choice == "3":
+            box_pm1 = float(input(f"What was {name1}'s Box +/- for that season?: "))
+            box_pm2 = float(input(f"What was {name2}'s Box +/- for that season?: "))
+
+    values = compareStatRows(stat_choice, row1, row2, team1, team2, box_pm1, box_pm2)
+    left, right = values
+
+    if stat_choice == "1":
+        print(f"{name1} {season1} TS%: {left:.1%}")
+        print(f"{name2} {season2} TS%: {right:.1%}")
+    elif stat_choice == "2":
+        print(f"{name1} {season1} eFG%: {left:.1%}")
+        print(f"{name2} {season2} eFG%: {right:.1%}")
+    elif stat_choice == "3":
+        print(f"{name1} {season1} VORP: {left:.1f}")
+        print(f"{name2} {season2} VORP: {right:.1f}")
+    elif stat_choice == "4":
+        print(f"{name1} {season1} USG%: {left:.1%}")
+        print(f"{name2} {season2} USG%: {right:.1%}")
+    elif stat_choice == "5":
+        stats = [("Points", "PTS"), ("Rebounds", "REB"), ("Assists", "AST"), ("Blocks", "BLK"), ("Steals", "STL"), ("Turnovers", "TOV")]
+        print(f"{name1}, {season1} stats per 36 minutes:")
+        for (label, _), value in zip(stats, left):
+            print(f"      {label}: {value:.1f}")
+        print(f"{name2}, {season2} stats per 36 minutes:")
+        for (label, _), value in zip(stats, right):
+            print(f"      {label}: {value:.1f}")
+
+
 def lookupPlayerStat(choice):
     if choice not in range(1, 8):
         print("That isn't one of the options.")
@@ -289,6 +372,7 @@ def main_loop():
                 continue
             lookupPlayerStat(statChoice)
 
+        # weekly stat leaderboard
         elif choice == 3:
             print("Which stat would you like the weekly leaders for?")
             for key, info in leaderboardStats.items():
@@ -304,6 +388,18 @@ def main_loop():
                 else:
                     results = buildLeaderboard(df, info["calc"], 2, info["minFga"])
                     printLeaderboard(results, info["label"], info["percent"])
+
+        # player stat comparison
+        elif choice == 4:
+            print("What statistic would you like to compare?")
+            print("     1) True Shooting Percentage (TS%)")
+            print("     2) Effective Field Goal Percentage (eFG%)")
+            print("     3) Value Over Replacement Player (VORP)")
+            print("     4) Usage Rate Percentage (USG%)")
+            print("     5) Players Per 36 Minutes Stats")
+            stat = input("Enter choice (1-5): ")
+            comparePlayersByStat(stat)
+
 
 if __name__ == "__main__":
     main_loop()
