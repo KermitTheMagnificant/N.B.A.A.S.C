@@ -141,6 +141,27 @@ def compareStatRows(stat_choice, row1, row2, team1=None, team2=None, box_pm1=Non
     raise ValueError(f"Unsupported stat choice: {stat_choice}")
 
 # function for option 5
+def formatComparisonResult(stat_choice, name1, season1, name2, season2, left, right):
+    if stat_choice == "1":
+        return f"{name1} {season1} TS%: {left:.1%}\n{name2} {season2} TS%: {right:.1%}"
+    if stat_choice == "2":
+        return f"{name1} {season1} eFG%: {left:.1%}\n{name2} {season2} eFG%: {right:.1%}"
+    if stat_choice == "3":
+        return f"{name1} {season1} VORP: {left:.1f}\n{name2} {season2} VORP: {right:.1f}"
+    if stat_choice == "4":
+        return f"{name1} {season1} USG%: {left:.1%}\n{name2} {season2} USG%: {right:.1%}"
+    if stat_choice == "5":
+        stats = [("Points", "PTS"), ("Rebounds", "REB"), ("Assists", "AST"), ("Blocks", "BLK"), ("Steals", "STL"), ("Turnovers", "TOV")]
+        lines = [f"{name1} {season1} per 36 minutes:"]
+        for (label, _), value in zip(stats, left):
+            lines.append(f"  {label}: {value:.1f}")
+        lines.append(f"{name2} {season2} per 36 minutes:")
+        for (label, _), value in zip(stats, right):
+            lines.append(f"  {label}: {value:.1f}")
+        return "\n".join(lines)
+    raise ValueError(f"Unsupported stat choice: {stat_choice}")
+
+
 def comparePlayersByStat(stat_choice):
     if stat_choice not in ["1", "2", "3", "4", "5"]:
         print("That isn't one of the options.")
@@ -169,27 +190,7 @@ def comparePlayersByStat(stat_choice):
 
     values = compareStatRows(stat_choice, row1, row2, team1, team2, box_pm1, box_pm2)
     left, right = values
-
-    if stat_choice == "1":
-        print(f"{name1} {season1} TS%: {left:.1%}")
-        print(f"{name2} {season2} TS%: {right:.1%}")
-    elif stat_choice == "2":
-        print(f"{name1} {season1} eFG%: {left:.1%}")
-        print(f"{name2} {season2} eFG%: {right:.1%}")
-    elif stat_choice == "3":
-        print(f"{name1} {season1} VORP: {left:.1f}")
-        print(f"{name2} {season2} VORP: {right:.1f}")
-    elif stat_choice == "4":
-        print(f"{name1} {season1} USG%: {left:.1%}")
-        print(f"{name2} {season2} USG%: {right:.1%}")
-    elif stat_choice == "5":
-        stats = [("Points", "PTS"), ("Rebounds", "REB"), ("Assists", "AST"), ("Blocks", "BLK"), ("Steals", "STL"), ("Turnovers", "TOV")]
-        print(f"{name1}, {season1} stats per 36 minutes:")
-        for (label, _), value in zip(stats, left):
-            print(f"      {label}: {value:.1f}")
-        print(f"{name2}, {season2} stats per 36 minutes:")
-        for (label, _), value in zip(stats, right):
-            print(f"      {label}: {value:.1f}")
+    print(formatComparisonResult(stat_choice, name1, season1, name2, season2, left, right))
 
 
 def lookupPlayerStat(choice):

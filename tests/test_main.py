@@ -1,6 +1,6 @@
 import unittest
 
-from main import compareStatRows
+from main import compareStatRows, formatComparisonResult
 
 
 class CompareStatRowsTests(unittest.TestCase):
@@ -32,6 +32,15 @@ class CompareStatRowsTests(unittest.TestCase):
 
         self.assertAlmostEqual(left, 131.465, places=3)
         self.assertAlmostEqual(right, 106.335, places=3)
+
+    def test_comparison_result_formatting(self):
+        result = formatComparisonResult("1", "LeBron James", "2025-26", "Stephen Curry", "2025-26", 0.58, 0.68)
+
+        self.assertIn("LeBron James", result)
+        self.assertIn("Stephen Curry", result)
+        self.assertIn("TS%", result)
+        self.assertIn("58.0%", result)
+        self.assertIn("68.0%", result)
 
 
 if __name__ == "__main__":

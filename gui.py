@@ -52,9 +52,10 @@ contentArea.pack(fill = "both", expand = True, padx = 24, pady = (0, 20))
 # =====================================================================
 pageCalc = tk.Frame(contentArea, bg = BG)
 pageStats = tk.Frame(contentArea, bg = BG)
+pageCompare = tk.Frame(contentArea, bg = BG)
 pageLeader = tk.Frame(contentArea, bg = BG)
 
-for page in (pageCalc, pageStats, pageLeader):
+for page in (pageCalc, pageStats, pageCompare, pageLeader):
     page.place(relx = 0, rely = 0, relwidth = 1, relheight = 1)
 
 leaderCard = tk.Frame(pageLeader, bg = CARD, highlightbackground = BORDER, highlightthickness = 1)
@@ -204,7 +205,7 @@ def pollLeaderboardResults():
 
 navButtons = {}
 for page, label in ((pageCalc, "Calculator"), (pageStats, "Statistics"),
-                    (pageLeader, "Leaderboard")):
+                    (pageCompare, "Compare"), (pageLeader, "Leaderboard")):
     button = tk.Button(
         navBar, text = label, command = lambda selectedPage = page: showPage(selectedPage),
         font = (FONT, 10, "bold"), bd = 0, padx = 20, pady = 9, cursor = "hand2",
@@ -216,6 +217,7 @@ for page, label in ((pageCalc, "Calculator"), (pageStats, "Statistics"),
 
 buttonCalc = navButtons[pageCalc]
 buttonStats = navButtons[pageStats]
+buttonCompare = navButtons[pageCompare]
 buttonLeader = navButtons[pageLeader]
 
 # =====================================================================
@@ -469,6 +471,155 @@ menuStats.place(relx = 0.5, rely = 0.05, anchor = "center")
 styleOptionMenu(menuStats)
 
 onPickStats(selectedStats.get())
+
+comparisonStatKeys = {
+    "True Shooting % (TS%)": "1",
+    "Effective FG% (eFG%)": "2",
+    "VORP": "3",
+    "Usage Rate (USG%)": "4",
+    "Per 36 Minutes": "5",
+}
+
+selectedCompareStat = tk.StringVar(value = "True Shooting % (TS%)")
+
+comparisonFrame = tk.Frame(pageCompare, bg = CARD, highlightbackground = BORDER, highlightthickness = 1)
+comparisonFrame.place(relx = 0.5, rely = 0.14, relwidth = 0.86, relheight = 0.83, anchor = "n")
+
+comparisonTitle = tk.Label(comparisonFrame, text = "Player Comparison", font = (FONT, 18, "bold"), bg = CARD, fg = TEXT)
+comparisonTitle.pack(pady = (22, 12))
+
+comparisonMenu = tk.OptionMenu(comparisonFrame, selectedCompareStat, *comparisonStatKeys.keys())
+comparisonMenu.pack(pady = (0, 10))
+styleOptionMenu(comparisonMenu)
+
+comparisonFields = tk.Frame(comparisonFrame, bg = CARD)
+comparisonFields.pack(fill = "x", padx = 32, pady = (8, 12))
+
+player1Entry = tk.Entry(comparisonFields, font = (FONT, 10), width = 28, bd = 0,
+                       bg = "#F5F7FA", fg = TEXT, insertbackground = TEXT,
+                       highlightthickness = 1, highlightbackground = BORDER,
+                       highlightcolor = ORANGE)
+player1Season = tk.Entry(comparisonFields, font = (FONT, 10), width = 12, bd = 0,
+                        bg = "#F5F7FA", fg = TEXT, insertbackground = TEXT,
+                        highlightthickness = 1, highlightbackground = BORDER,
+                        highlightcolor = ORANGE)
+player2Entry = tk.Entry(comparisonFields, font = (FONT, 10), width = 28, bd = 0,
+                       bg = "#F5F7FA", fg = TEXT, insertbackground = TEXT,
+                       highlightthickness = 1, highlightbackground = BORDER,
+                       highlightcolor = ORANGE)
+player2Season = tk.Entry(comparisonFields, font = (FONT, 10), width = 12, bd = 0,
+                        bg = "#F5F7FA", fg = TEXT, insertbackground = TEXT,
+                        highlightthickness = 1, highlightbackground = BORDER,
+                        highlightcolor = ORANGE)
+
+player1Entry.insert(0, "")
+player1Season.insert(0, currentSeason())
+player2Entry.insert(0, "")
+player2Season.insert(0, currentSeason())
+
+for rowIndex, row in enumerate([
+    ("Player 1", player1Entry),
+    ("Season", player1Season),
+    ("Player 2", player2Entry),
+    ("Season", player2Season),
+]):
+    label = tk.Label(comparisonFields, text = row[0], font = (FONT, 9, "bold"), bg = CARD, fg = MUTED)
+    label.grid(row = rowIndex, column = 0, padx = (0, 8), pady = (0, 10), sticky = "w")
+    row[1].grid(row = rowIndex, column = 1, padx = (0, 18), pady = (0, 10), sticky = "w")
+
+comparisonFields.grid_columnconfigure(1, minsize = 180)
+comparisonFields.grid_columnconfigure(2, minsize = 120)
+
+boxPmFrame = tk.Frame(comparisonFields, bg = CARD)
+boxPm1Label = tk.Label(boxPmFrame, text = "Player 1 Box +/-", font = (FONT, 9, "bold"), bg = CARD, fg = MUTED)
+boxPm1 = tk.Entry(boxPmFrame, font = (FONT, 10), width = 12, bd = 0,
+                  bg = "#F5F7FA", fg = TEXT, insertbackground = TEXT,
+                  highlightthickness = 1, highlightbackground = BORDER,
+                  highlightcolor = ORANGE)
+boxPm2Label = tk.Label(boxPmFrame, text = "Player 2 Box +/-", font = (FONT, 9, "bold"), bg = CARD, fg = MUTED)
+boxPm2 = tk.Entry(boxPmFrame, font = (FONT, 10), width = 12, bd = 0,
+                  bg = "#F5F7FA", fg = TEXT, insertbackground = TEXT,
+                  highlightthickness = 1, highlightbackground = BORDER,
+                  highlightcolor = ORANGE)
+boxPmFrame.grid(row = 4, column = 0, columnspan = 2, sticky = "w", pady = (4, 8))
+boxPm1Label.grid(row = 0, column = 0, padx = (0, 8), pady = (0, 6), sticky = "w")
+boxPm1.grid(row = 0, column = 1, padx = (0, 18), pady = (0, 6), sticky = "w")
+boxPm2Label.grid(row = 0, column = 2, padx = (0, 8), pady = (0, 6), sticky = "w")
+boxPm2.grid(row = 0, column = 3, sticky = "w", pady = (0, 6))
+
+comparisonResult = tk.Label(
+    comparisonFrame, text = "Select a statistic and enter two players to compare.",
+    font = (FONT, 10, "bold"), bg = "#F5F7FA", fg = TEXT,
+    justify = "left", anchor = "w", wraplength = 620,
+    highlightthickness = 1, highlightbackground = BORDER,
+)
+comparisonResult.pack(fill = "x", padx = 32, pady = (0, 12))
+
+
+def updateCompareFields():
+    if selectedCompareStat.get() == "VORP":
+        boxPmFrame.grid()
+    else:
+        boxPmFrame.grid_remove()
+
+
+def onComparePlayers():
+    statKey = comparisonStatKeys[selectedCompareStat.get()]
+    name1 = player1Entry.get().strip()
+    season1 = player1Season.get().strip() or currentSeason()
+    name2 = player2Entry.get().strip()
+    season2 = player2Season.get().strip() or currentSeason()
+
+    if not name1 or not name2:
+        comparisonResult.config(text = "Please enter both player names.", fg = "#A33A2B")
+        return
+
+    try:
+        row1, error1 = getStatsRow(name1, season1)
+        row2, error2 = getStatsRow(name2, season2)
+        if error1:
+            comparisonResult.config(text = error1, fg = "#A33A2B")
+            return
+        if error2:
+            comparisonResult.config(text = error2, fg = "#A33A2B")
+            return
+
+        team1 = team2 = None
+        if statKey in ("3", "4"):
+            if row1["TEAM_ID"] == 0 or row2["TEAM_ID"] == 0:
+                comparisonResult.config(text = "Team stats are unavailable for players traded midseason.", fg = "#A33A2B")
+                return
+            team1 = getTeamRow(row1["TEAM_ID"], season1)
+            team2 = getTeamRow(row2["TEAM_ID"], season2)
+            if team1["GP"] == 0 or team2["GP"] == 0:
+                comparisonResult.config(text = "One of these teams has not played any games yet.", fg = "#A33A2B")
+                return
+
+        boxPm1Value = None
+        boxPm2Value = None
+        if statKey == "3":
+            if not boxPm1.get().strip() or not boxPm2.get().strip():
+                comparisonResult.config(text = "Please enter Box +/- values for both players to compare VORP.", fg = "#A33A2B")
+                return
+            boxPm1Value = float(boxPm1.get())
+            boxPm2Value = float(boxPm2.get())
+
+        values = compareStatRows(statKey, row1, row2, team1 if statKey in ("3", "4") else None, team2 if statKey in ("3", "4") else None, boxPm1Value, boxPm2Value)
+        left, right = values
+        comparisonResult.config(text = formatComparisonResult(statKey, name1, season1, name2, season2, left, right), fg = TEXT)
+    except ValueError as valueError:
+        comparisonResult.config(text = str(valueError), fg = "#A33A2B")
+    except Exception:
+        comparisonResult.config(text = "The comparison could not be completed. Check the player names and season values.", fg = "#A33A2B")
+
+
+tk.Button(comparisonFrame, text = "Compare players", command = onComparePlayers,
+          font = (FONT, 10, "bold"), bg = ORANGE, fg = "#FFFFFF",
+          activebackground = ORANGE_HOVER, activeforeground = "#FFFFFF",
+          bd = 0, padx = 24, pady = 9, cursor = "hand2", relief = "flat").pack(pady = 12)
+
+selectedCompareStat.trace_add("write", lambda *_: updateCompareFields())
+updateCompareFields()
 
 # bomboclat wallahi....
 showPage(pageCalc)
