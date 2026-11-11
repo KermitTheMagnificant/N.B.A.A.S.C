@@ -140,7 +140,7 @@ def compareStatRows(stat_choice, row1, row2, team1=None, team2=None, box_pm1=Non
         return left, right
     raise ValueError(f"Unsupported stat choice: {stat_choice}")
 
-
+# function for option 5
 def comparePlayersByStat(stat_choice):
     if stat_choice not in ["1", "2", "3", "4", "5"]:
         print("That isn't one of the options.")
@@ -304,6 +304,7 @@ def main_loop():
         print("     1) Custom Calculator")
         print("     2) Stat Lookup")
         print("     3) Stat Leaderboard")
+        print("     4) Player Stat Comparison")
         choice = readMenuChoice("Choice: ")
         if choice is None:
             continue
