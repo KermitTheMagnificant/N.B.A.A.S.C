@@ -1,5 +1,5 @@
 # N.B.A.A.S.C
-
+# AS OF 11/11/26 THERE IS A BUG WHICH PREVENTS THE GUI FROM BEING LAUNCHED
 ## The National Basketball Association Advanced Statistics Calculator
 
 A calculator for advanced stats for basketball. You can either calculate using your own stats, or look them up using the nba_api library. Note that some stats are available only with the lookup, either due to their nature (such as with team based stats) or because I just haven't gotten to adding them to the manual calculations.
