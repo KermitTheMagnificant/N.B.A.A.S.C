@@ -9,6 +9,7 @@ USER_RC="$HOME/.bashrc"
 PATH_LINE='export PATH="$HOME/.local/bin:$PATH"'
 
 mkdir -p "$INSTALL_DIR"
+python3 -m pip install --user nba_api
 
 cat > "$TARGET_PATH" <<EOF
 #!/usr/bin/env bash

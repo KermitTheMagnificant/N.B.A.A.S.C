@@ -4,8 +4,8 @@ import tkinter as tk
 from tkinter import ttk
 from main import (
     buildLeaderboard, currentSeason, efgper, findPlayerID, getSeasonRow,
-    getTeamRow, getWeekStats, leaderboardStats, per36, percalc,
-    threeparate, tsper, usgcalc, vorpcalc,
+    getTeamRow, getWeekStats, leaderboardStats, normalizeSeason, per36,
+    percalc, threeparate, tsper, usgcalc, vorpcalc,
 )
 
 # =====================================================================
@@ -326,7 +326,8 @@ def getStatsRow(name, season):
     playerID = findPlayerID(name)
     if playerID is None:
         return None, "Player not found. Check the player's full name."
-    row = getSeasonRow(playerID, season)
+    normalizedSeason = normalizeSeason(season)
+    row = getSeasonRow(playerID, normalizedSeason)
     if row is None:
         return None, "No stats found for that player and season."
     return row, None
@@ -566,9 +567,9 @@ def updateCompareFields():
 def onComparePlayers():
     statKey = comparisonStatKeys[selectedCompareStat.get()]
     name1 = player1Entry.get().strip()
-    season1 = player1Season.get().strip() or currentSeason()
+    season1 = normalizeSeason(player1Season.get().strip() or currentSeason())
     name2 = player2Entry.get().strip()
-    season2 = player2Season.get().strip() or currentSeason()
+    season2 = normalizeSeason(player2Season.get().strip() or currentSeason())
 
     if not name1 or not name2:
         comparisonResult.config(text = "Please enter both player names.", fg = "#A33A2B")

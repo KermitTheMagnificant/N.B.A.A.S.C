@@ -1,3 +1,4 @@
+import re
 from nba_api.stats.static import players
 from nba_api.stats.endpoints import playercareerstats
 from nba_api.stats.endpoints import leaguedashteamstats
@@ -23,11 +24,35 @@ def getWeekStats():
     )
     return stats.get_data_frames()[0]
 
+def normalizeSeason(season):
+    if season is None:
+        return None
+
+    value = str(season).strip()
+    if not value:
+        return value
+
+    value = value.replace("/", "-").replace(" ", "")
+
+    if re.fullmatch(r"\d{4}-\d{2}", value):
+        return value
+
+    if re.fullmatch(r"\d{4}-\d{4}", value):
+        return f"{value[:4]}-{value[5:][-2:]}"
+
+    if re.fullmatch(r"\d{4}", value):
+        next_year = int(value) + 1
+        return f"{value}-{str(next_year)[-2:]}"
+
+    return value
+
+
 # gets season stats for a player
 def getSeasonRow(player_id, season):
+    normalized = normalizeSeason(season)
     career = playercareerstats.PlayerCareerStats(player_id=player_id, timeout=30)
     df = career.get_data_frames()[0]
-    season_rows = df[df["SEASON_ID"] == season]
+    season_rows = df[df["SEASON_ID"] == normalized]
     if season_rows.empty:
         return None
     return season_rows.iloc[0]
@@ -41,8 +66,9 @@ def findPlayerID(name):
 
 # gets team totals, only rly needed for usg% as of rn
 def getTeamRow(team_id, season):
+    normalized = normalizeSeason(season)
     teams = leaguedashteamstats.LeagueDashTeamStats(
-        season=season, per_mode_detailed="Totals", timeout=30
+        season=normalized, per_mode_detailed="Totals", timeout=30
     )
     df = teams.get_data_frames()[0]
     return df[df["TEAM_ID"] == team_id].iloc[0]

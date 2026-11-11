@@ -1,6 +1,6 @@
 import unittest
 
-from main import compareStatRows, formatComparisonResult
+from main import compareStatRows, formatComparisonResult, normalizeSeason
 
 
 class CompareStatRowsTests(unittest.TestCase):
@@ -41,6 +41,12 @@ class CompareStatRowsTests(unittest.TestCase):
         self.assertIn("TS%", result)
         self.assertIn("58.0%", result)
         self.assertIn("68.0%", result)
+
+    def test_normalize_season_supports_common_formats(self):
+        self.assertEqual(normalizeSeason("2024-25"), "2024-25")
+        self.assertEqual(normalizeSeason("2024/25"), "2024-25")
+        self.assertEqual(normalizeSeason("2024-2025"), "2024-25")
+        self.assertEqual(normalizeSeason("2024"), "2024-25")
 
 
 if __name__ == "__main__":
