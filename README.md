@@ -21,6 +21,18 @@ A calculator for advanced stats for basketball. You can either calculate using y
   ```bash
   python3 main.py
   ```
+4. To be able to run the program anywhere in Linux, run the 'install.sh' file
+
+```bash
+./install.sh
+```
+
+5. Then, run the GUI from anywhere using the name of the program.
+
+```bash
+nbaasc
+```
+NOTE: This only works on Linux as of 11/11/2026
 ### Current Features
 
 TS%, eFG%, VORP, USG%, player lookup for TS% and eFG%, VORP, USG%, Per 36 Stats, 3 Point Attempt Rate, and Player Efficiency Rating.
